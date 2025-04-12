@@ -1,7 +1,11 @@
 function plot_frame(pos)
-  clf; hold on; axis equal; grid on;
-  axis([-1 2.5 -0.5 2]);  % Ajustá según la escala de tu sistema
+  clf; # borra la figura anterior
+  hold on; # permite dibujar multiples cosas
+  axis equal; # una unidad de x es igual a una unidad de y
+  grid on; # activa la grilla
+  axis([-1 2.5 -0.5 2]);  % limites del graph(xmin xmax ymin ymax)
 
+  # posiciones de las masas
   x1 = pos(1);  y1 = pos(2);
   x2 = pos(3);  y2 = pos(4);
   x3 = pos(5);  y3 = pos(6);
@@ -10,7 +14,7 @@ function plot_frame(pos)
   x6 = pos(11); y6 = pos(12);
   x7 = pos(13); y7 = pos(14);
 
-  #lines
+  # dibuja las barras en negro
   line([x1 x3], [y1 y3], 'color', 'k');
   line([x2 x3], [y2 y3], 'color', 'k');
   line([x2 x4], [y2 y4], 'color', 'k');
@@ -22,9 +26,9 @@ function plot_frame(pos)
   line([x5 x7], [y5 y7], 'color', 'k');
   line([x6 x7], [y6 y7], 'color', 'k');
 
-  #puntos
+  # dibuja y rellena los puntos con rojo
   plot([x1 x2 x3 x4 x5 x6 x7], [y1 y2 y3 y4 y5 y6 y7], 'ro', 'MarkerFaceColor', 'r');
 
-  drawnow;
+  drawnow; # fuerza a octave a dibujar
 end
 

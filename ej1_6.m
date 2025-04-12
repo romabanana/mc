@@ -17,18 +17,21 @@ x0 = [ 0; 0;
        0; 0;
        0; 0];
 
-##x0 = x0(:);
+intervalo = [0,5]; # tiempo de simulacion
 
-span = [0,5];
+# Dos funciones: @system y @system2
+# @system : grandes deformaciones
+# @system2 : pequeñas deformaciones
 
-[t,x] = ode45(@system2, span, x0);
+[t,x] = ode23s(@system, intervalo, x0);
+##[t,x] = ode45(@system, span, x0); #más rapido que la ode23s en mi compu
 
 
 
-##plot_frame(x0);
-for i = 1:10:length(t)
-  plot_frame(x(i, :)');
-  pause(.05);
+
+for i = 1:10:length(t) # para i con paso 5 en la longitud de t
+  plot_frame(x(i, :)'); # plotea el frame
+  pause(.05); # pausa para que se aprecie
 end
 
 
