@@ -3,8 +3,8 @@ function dxdt = system(t, x)
 
   # Constantes
   k = 20; #rigidez
-  m = 0.5; #masa (constante en el ej6)
-  W = [0;5]; #vector de la fuerza externa
+  m = 1; #masa (constante en el ej6)
+  W = [0;0.5]; #vector de la fuerza externa
   L = 0.5; #vector en t0
   x0 = [ 0; 0;
          0; L;

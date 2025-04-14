@@ -23,8 +23,8 @@ intervalo = [0,5]; # tiempo de simulacion
 # @system : grandes deformaciones
 # @system2 : pequeñas deformaciones
 
-[t,x] = ode23s(@system, intervalo, x0);
-##[t,x] = ode45(@system, span, x0); #más rapido que la ode23s en mi compu
+##[t,x] = ode23s(@system, intervalo, x0);
+[t,x] = ode45(@system, intervalo, x0); #más rapido que la ode23s en mi compu
 
 
 
