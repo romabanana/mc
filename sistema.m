@@ -7,7 +7,9 @@ function y = sistema(t,x)
   A = 0.1; # Área de sección transversal de las barras.
   P1 = [1.3 ; 0];
   P2 = [0; 1.3];
-
+  seno = sin(3*t);
+##  P1 = [5.3*seno; 0];
+##  P2 = [0; 5.3*seno];
   # Vector x en t0;
   d=5;
   x0 = [ 0; 0;

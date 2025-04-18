@@ -23,12 +23,11 @@ x0 = [ 0; 0;
        0; 0;
        ];
 
-tiempo = 0:0.5:50;
+tiempo = 0:0.2:50;
 [t,x] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
 
 ##
-##figure(1);
-##subplot(2,2,1)
+##figure(2);
 ##plot(t, x(:,1:2:22));
 ##xlabel('t');
 ##ylabel('x');
