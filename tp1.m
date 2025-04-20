@@ -23,7 +23,7 @@ x0 = [ 0; 0;
        0; 0;
        ];
 
-tiempo = 0:0.2:150;
+tiempo = 0:0.2:50;
 [t,x] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
 
 ##
