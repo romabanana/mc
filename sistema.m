@@ -12,100 +12,45 @@
 #############################
 
 function y = sistema(t,x)
+##
+  global F45;
+  global maxs;
 
-  ################################
-  ######## Configuración #########
-  ################################
+  global GRANDES_DIFF;
+  global SENO;
 
-  grandes_diff = 1;
-  fuerza_senoidal = 0;
+  global p; # Densidad lineal de las barras.
+  global E; # Módulo de elasticidad longitudinal de las barras.
+  global A; # Área de sección transversal de las barras.
+  global P1;
+  global P2;
 
-  #########################################
-  ######## Definición del Sistema #########
-  #########################################
+  global x0;
+  global B;
+  global L0;
+  global m;
 
-  # Constantes
-
-  p = 3; # Densidad lineal de las barras.
-  E = 200; # Módulo de elasticidad longitudinal de las barras.
-  A = 0.1; # Área de sección transversal de las barras.
-  P = 1.3;
-  P1 = [P ; 0];
-  P2 = [0; P];
-
-  # Configuración de fuerza senoidal
-  if(fuerza_senoidal)
-    seno = sin(t);
+  global CEL;
+  global TCEL;
+  # Inicialización vectores
+  if(SENO)
+    seno = cos(t);
     P1 = P1.*seno;
     P2 = P2.*seno;
   endif
-
-  # Vector x en t0;
-  d=5;
-  x0 = [ 0; 0;
-         8*d; 0;
-         d; d;
-         2*d; d;
-         6*d; d;
-         7*d; d;
-         2*d; 2*d;
-         2*d+3.333; 2*d;
-         6*d-3.333; 2*d;
-         6*d; 2*d;
-         4*d; 4*d;
-         0; 0;  #v1(0)=0 siempre
-         0; 0;  #v2(0)=0 siempre
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         0; 0;
-         ];
-
-
-  # Vector de B (conexiones)
-  # Orden de acuerdo a la tabla del tp;
-  B = [
-    1 4;
-    4 5;
-    2 5;
-    4 8;
-    9 11;
-    4 7;
-    1 3;
-    5 10;
-    2 6;
-    7 11;
-    10 11;
-    7 8;
-    9 10;
-    3 4;
-    5 6;
-    8 11;
-    5 9;
-    6 10;
-    3 7;
-  ];
-
-  # Inicialización vectores
-  L0 = zeros(19,1);
   L = zeros(19,1);
   k = zeros(19,1);
   F = zeros(38,1);
+  max_aux = zeros(19,1);
   for i=1:19
 
     # C23
-    L0(i) = norm(x0(2*B(i,1)-1: 2*B(i,1)) - x0(2*B(i,2)-1:2*B(i,2)));
     L(i) = norm(x(2*B(i,1)-1: 2*B(i,1)) - x(2*B(i,2)-1:2*B(i,2)));
 
     k(i) = E*A/L0(i);
     i1 = 2*B(i,1)-1;
     i2 = 2*B(i,2)-1;
-    if(grandes_diff)
+    if(GRANDES_DIFF)
       xi = x(i1:i1+1);
       xj = x(i2:i2+1);
       F_temp = k(i)*(1 - L0(i)/L(i)) * (xj - xi);
@@ -116,30 +61,22 @@ function y = sistema(t,x)
     endif
 
     F(2*i-1:2*i) = F_temp;
+    ## Here is the F45 log
+    if(i==2)
+      u = (x(7:8) - x(9:10)) ./ L(i);
+      F45{end+1} = struct('F', F_temp(1));
+    endif
+
+
+    aux_x0 = x0(2*i-1:2*i);
+    aux_xi = x(2*i-1:2*i);
+    d = norm(aux_xi - aux_x0);
+    max_aux(i) = d;
 
   endfor
 
-  # masas de las barras = p*l.
 
-  mb = p*L0;
-
-  # masas de cada nodo;
-
-  m = [
-    mb(1) + mb(7);
-    mb(3) + mb(9);
-    mb(7) + mb(14) + mb(19);
-    mb(1) + mb(2) + mb(4) + mb(6) + mb(14);
-    mb(2) + mb(3) + mb(8) + mb(15) + mb(17);
-    mb(9) + mb(15) + mb(18);
-    mb(6) + mb(10) + mb(12) + mb(19);
-    mb(4) + mb(12) + mb(16);
-    mb(5) + mb(13) + mb(17);
-    mb(8) + mb(11) + mb(13) + mb(18);
-    mb(5) + mb(10) + mb(11) + mb(16);
-  ];
-
-  m = 0.5*m; # mitad de la masa de la barra para cada nodo.
+  maxs{end+1} = struct('x', max(max_aux), 't', t);
 
 
   #########################################
@@ -187,10 +124,11 @@ function y = sistema(t,x)
     3 4 7;
     4 8 7;
     7 8 11;
+    4 5 11;
   ];
 
-  signo = zeros(4,1);
-  signo_0 = zeros(4,1);
+  signo = zeros(5,1);
+  signo_0 = zeros(5,1);
 
   for i = 1:4
     p0 = x(2*T(i,1)-1 : 2*T(i,1));
@@ -215,8 +153,10 @@ function y = sistema(t,x)
   endfor
 
 
-  if (any(signo != signo_0) && (t>135) && (t<136))
-    t
-    printf(" No se cumple\n");
-   endif
+  if (any(signo != signo_0) && CEL)
+    printf(" A los %.2f s  no se cumple la C.E.L\n", t);
+    TCEL = t;
+    CEL = 0;
+  endif
+
 
