@@ -12,7 +12,10 @@
 #############################
 
 function y = sistema(t,x)
-##
+
+#############################
+######## Función ############
+#############################
   global F45;
   global maxs;
 
@@ -23,6 +26,7 @@ function y = sistema(t,x)
   global E; # Módulo de elasticidad longitudinal de las barras.
   global A; # Área de sección transversal de las barras.
   global P1;
+  global P;
   global P2;
 
   global x0;
@@ -33,23 +37,30 @@ function y = sistema(t,x)
   global CEL;
   global TCEL;
   # Inicialización vectores
-  if(SENO)
-    seno = cos(t);
-    P1 = P1.*seno;
-    P2 = P2.*seno;
-  endif
+
   L = zeros(19,1);
   k = zeros(19,1);
   F = zeros(38,1);
   max_aux = zeros(19,1);
+
+#############################
+######## Función ############
+#############################
+
+
   for i=1:19
 
-    # C23
+    # Magnitudes en t
     L(i) = norm(x(2*B(i,1)-1: 2*B(i,1)) - x(2*B(i,2)-1:2*B(i,2)));
 
+    # K en t;
     k(i) = E*A/L0(i);
+
+    # Indices auxiliares.
     i1 = 2*B(i,1)-1;
     i2 = 2*B(i,2)-1;
+
+    # Grandes o pequeñas deformaciones.
     if(GRANDES_DIFF)
       xi = x(i1:i1+1);
       xj = x(i2:i2+1);
@@ -60,14 +71,16 @@ function y = sistema(t,x)
       F_temp = k(i)*(L(i)/L0(i) - 1) * (xj0 - xi0);
     endif
 
+    # Asigno al vector de fuerzas;
     F(2*i-1:2*i) = F_temp;
-    ## Here is the F45 log
+
+    ## Recupero Fuerza 45
     if(i==2)
       u = (x(7:8) - x(9:10)) ./ L(i);
-      F45{end+1} = struct('F', F_temp(1));
+      F45{end+1} = struct('F', F_temp(1), 't', t);
     endif
 
-
+    # Registro máximo desplazamiento
     aux_x0 = x0(2*i-1:2*i);
     aux_xi = x(2*i-1:2*i);
     d = norm(aux_xi - aux_x0);
@@ -75,13 +88,24 @@ function y = sistema(t,x)
 
   endfor
 
-
+  # Lo recupero.
   maxs{end+1} = struct('x', max(max_aux), 't', t);
 
 
   #########################################
+  ############## Senoidal #################
+  #########################################
+
+  if(SENO)
+    f = 0.25; # frecuencia
+    seno = cos(2*pi*f*t); % seno = coseno  xdd
+    P1 = [P*seno; 0];
+    P2 = [0; P*seno];
+  endif
+  #########################################
   ############## Salida ###################
   #########################################
+
   y = zeros(44,1);
   y(1:22) = x(23:44);
 
@@ -119,6 +143,7 @@ function y = sistema(t,x)
   ######## Cálculo de la C.E.L.  ##########
   #########################################
 
+  # Vector de Triangulos.
   T = [
     1 4 3;
     3 4 7;
@@ -131,13 +156,16 @@ function y = sistema(t,x)
   signo_0 = zeros(5,1);
 
   for i = 1:4
+    # Tomo vertices del Triangulo
     p0 = x(2*T(i,1)-1 : 2*T(i,1));
     p1 = x(2*T(i,2)-1 : 2*T(i,2));
     p2 = x(2*T(i,3)-1 : 2*T(i,3));
 
+    # Vectores
     v1 = p1 - p0;
     v2 = p2 - p0;
 
+    # Producto cruz y signo
     area = v1(1)*v2(2) - v1(2)*v2(1);
     signo(i) = sign(area);
 
@@ -152,7 +180,8 @@ function y = sistema(t,x)
     signo_0(i) = sign(area_0);
   endfor
 
-
+  # Si existe diferencia de signos y se cumple la CEL entonces guarda TCEL y
+  # setea CEL = false;
   if (any(signo != signo_0) && CEL)
     printf(" A los %.2f s  no se cumple la C.E.L\n", t);
     TCEL = t;
