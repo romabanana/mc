@@ -54,7 +54,7 @@ function y = sistema(t,x)
     L(i) = norm(x(2*B(i,1)-1: 2*B(i,1)) - x(2*B(i,2)-1:2*B(i,2)));
 
     # K en t;
-    k(i) = E*A/L0(i);
+    k(i) = (E*A)./L0(i);
 
     # Indices auxiliares.
     i1 = 2*B(i,1)-1;
@@ -184,6 +184,7 @@ function y = sistema(t,x)
   # setea CEL = false;
   if (any(signo != signo_0) && CEL)
     printf(" A los %.2f s  no se cumple la C.E.L\n", t);
+
     TCEL = t;
     CEL = 0;
   endif

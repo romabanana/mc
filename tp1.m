@@ -88,35 +88,69 @@ endfor
 
 # masas de cada nodo;
 mb = p.*L0;
-global m = [
-  mb(1) + mb(7);
-  mb(3) + mb(9);
-  mb(7) + mb(14) + mb(19);
-  mb(1) + mb(2) + mb(4) + mb(6) + mb(14);
-  mb(2) + mb(3) + mb(8) + mb(15) + mb(17);
-  mb(9) + mb(15) + mb(18);
-  mb(6) + mb(10) + mb(12) + mb(19);
-  mb(4) + mb(12) + mb(16);
-  mb(5) + mb(13) + mb(17);
-  mb(8) + mb(11) + mb(13) + mb(18);
-  mb(5) + mb(10) + mb(11) + mb(16);
-];
 
-m = 0.5*m; # mitad de la masa de la barra para cada nodo.
+%Lo que taba mal... jejeje
+
+##global m = [
+##  mb(1) + mb(7);
+##  mb(3) + mb(9);
+##  mb(7) + mb(14) + mb(19);
+##  mb(1) + mb(2) + mb(4) + mb(6) + mb(14);
+##  mb(2) + mb(3) + mb(8) + mb(15) + mb(17);
+##  mb(9) + mb(15) + mb(18);
+##  mb(6) + mb(10) + mb(12) + mb(19);
+##  mb(4) + mb(12) + mb(16);
+##  mb(5) + mb(13) + mb(17);
+##  mb(8) + mb(11) + mb(13) + mb(18);
+##  mb(5) + mb(10) + mb(11) + mb(16);
+##];
+##m = 0.5*m; # mitad de la masa de la barra para cada nodo.
+
+%FIX
+
+global m = zeros(11, 1);
+for barra = 1:19
+  nodo1 = B(barra, 1);
+  nodo2 = B(barra, 2);
+
+  m(nodo1) += 0.05 * mb(barra);
+  m(nodo2) += 0.05 * mb(barra);
+endfor
 
 
 #####################################
 ############### ODE #################
 #####################################
+% ============================================================================
+% Ajuste del paso de tiempo (delta) para que la longitud de t
+% generado por la ode coincida con la cantidad de logs (F45/maxs).
+%
+% 1. Primero uso delta arbitrario para estimar cuántos pasos ejecuta ode45
+%  hasta llegar al tiempo final.
+%
+% 2. A partir de la cantidad de logs obtenidos (N = length(F45)), se recalcula
+%    un nuevo delta fijo como delta = t_end / N.
+%
+% 3. Se reinicia F45 y maxs, y se realiza una segunda ode con el delta corregido.
+%    Esto garantiza que los vectores de tiempo y logs tengan la misma longitud,
+%    permitiendo así comparaciones 1 a 1 sin desfases.
+%
+% 4. Luego, se busca la posición temporal (TCEL_POS) y de log (TCEL_LPOS) donde se
+%    alcanza o supera el tiempo crítico de evaluación de la longitud (TCEL).
+%    Si TCEL = -1, se toma como referencia el último instante de simulación.
+% ============================================================================
+
 delta = 1; #0.38 #0.225 #0.170
-t_end = 800;
+t_end = 100;
 tiempo = 0:delta:t_end;
 [_,_] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
+
 N = length(F45);
 delta = t_end/N;
 tiempo = 0:delta:t_end;
 F45 = {};
 maxs = {};
+
 [t,x] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
 
 ## Busqueda del TCEL en el vector t.
@@ -190,13 +224,21 @@ legend('Tensión en nodo 11', 'Tensión en barra 2', 'Marca de tiempo final');
 
 # Plot de la animación. (item iv);
 figure(2);
-
-for i = 1:3:TCEL_POS # para i con paso 5 en la longitud de t
+##
+##s_NomArch = '../EjemploGif';
+##
+##%%
+##gif([s_NomArch,'.gif'],'overwrite',true);
+##gif;
+%
+for i = 1:ceil(100*delta):TCEL_POS # para i con paso 5 en la longitud de t
   clf;
   plot_frame2(x(i, :)'); # plotea el frame
   title(sprintf('Tiempo = %.2f s', t(i)));
   drawnow;
+##  gif;
   pause(0.005); # pausa para que se aprecie
+
 endfor
 
 
