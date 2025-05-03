@@ -21,6 +21,7 @@ function y = sistema(t,x)
 
   global GRANDES_DIFF;
   global SENO;
+  global f;
 
   global p; # Densidad lineal de las barras.
   global E; # Módulo de elasticidad longitudinal de las barras.
@@ -68,7 +69,7 @@ function y = sistema(t,x)
     else
       xi0 = x0(i1:i1+1);
       xj0 = x0(i2:i2+1);
-      F_temp = k(i)*(L(i)/L0(i) - 1) * (xj0 - xi0);
+      F_temp = k(i)*(1 - L0(i)/L(i)) * (xj0 - xi0);
     endif
 
     # Asigno al vector de fuerzas;
@@ -97,8 +98,7 @@ function y = sistema(t,x)
   #########################################
 
   if(SENO)
-    f = 0.25; # frecuencia
-    seno = cos(2*pi*f*t); % seno = coseno  xdd
+    seno = sin(2*pi*f*t); % seno
     P1 = [P*seno; 0];
     P2 = [0; P*seno];
   endif

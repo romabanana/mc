@@ -9,10 +9,13 @@ maxs = {};
 #### Configuración #########
 ############################
 
-global GRANDES_DIFF; # bool
-GRANDES_DIFF = 1;
+global GRANDES_DIFF = 1; # bool
 
-global SENO = 0; # bool
+
+% Seno no funciona en pequeñas diferencias... no es requerido.
+global SENO = 1; # bool
+global f = 0.05; # frecuencia
+
 
 #####################################
 ############ Constantes #############
@@ -38,8 +41,8 @@ global x0 = [ 0; 0;
        6*d; d;
        7*d; d;
        2*d; 2*d;
-       2*d+3.333; 2*d;
-       6*d-3.333; 2*d;
+       2*d+3+(1/3); 2*d;
+       6*d-3-(1/3); 2*d;
        6*d; 2*d;
        4*d; 4*d;
        0; 0;  #v1(0)=0 siempre
@@ -86,27 +89,10 @@ for i=1:19
 endfor
 
 
-# masas de cada nodo;
+# masas de cada barra;
 mb = p.*L0;
 
-%Lo que taba mal... jejeje
-
-##global m = [
-##  mb(1) + mb(7);
-##  mb(3) + mb(9);
-##  mb(7) + mb(14) + mb(19);
-##  mb(1) + mb(2) + mb(4) + mb(6) + mb(14);
-##  mb(2) + mb(3) + mb(8) + mb(15) + mb(17);
-##  mb(9) + mb(15) + mb(18);
-##  mb(6) + mb(10) + mb(12) + mb(19);
-##  mb(4) + mb(12) + mb(16);
-##  mb(5) + mb(13) + mb(17);
-##  mb(8) + mb(11) + mb(13) + mb(18);
-##  mb(5) + mb(10) + mb(11) + mb(16);
-##];
-##m = 0.5*m; # mitad de la masa de la barra para cada nodo.
-
-%FIX
+% Calculo de las masas por nodo.
 
 global m = zeros(11, 1);
 for barra = 1:19
@@ -140,10 +126,10 @@ endfor
 %    Si TCEL = -1, se toma como referencia el último instante de simulación.
 % ============================================================================
 
-delta = 1; #0.38 #0.225 #0.170
-t_end = 100;
+delta = 1;
+t_end = 200*(1-(GRANDES_DIFF)) + 50*(GRANDES_DIFF) + 50*(SENO);
 tiempo = 0:delta:t_end;
-[_,_] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
+[_,_] = ode45(@sistema, tiempo, x0);
 
 N = length(F45);
 delta = t_end/N;
@@ -154,24 +140,24 @@ maxs = {};
 [t,x] = ode45(@sistema, tiempo, x0); #más rapido que la ode23s en mi compu
 
 ## Busqueda del TCEL en el vector t.
-TCEL_POS = 1;
 flag1 = 1;
 flag2 = 1;
+TCEL_POS = length(t);
+TCEL_LPOS = length(F45);
+
 if(TCEL != -1)
+  tf = TCEL * (TCEL>50) + 50 * (TCEL <= 50);
+
   for i=1:length(F45)
-    if((t(i) >= TCEL) && flag1)
+    if((t(i) >= tf) && flag1)
       TCEL_POS = i;
       flag1 = 0;
     endif
-    if((F45{i}.t >= TCEL) && flag2)
+    if((F45{i}.t >= tf) && flag2)
       TCEL_LPOS = i;
       flag2 = 0;
     endif
   endfor
-else
-  TCEL = t(end);
-  TCEL_POS = length(t);
-  TCEL_LPOS = length(F45);
 endif
 
 
@@ -199,7 +185,6 @@ for i = 1:N
   maxd(i,2) = maxs{i}.t; # t en el que se produce.
 endfor
 
-##[maximo_desp, pos] = max(maxd(N,1));
 [maximo_desp, pos] = max(maxd(1:TCEL_LPOS,1)); #599 # maximo de maximos.
 printf("maximo desplazamiento: %.2f m\n", maximo_desp);
 printf("en el tiempo: %.2f s\n",maxd(pos,2));
@@ -210,33 +195,41 @@ Faux = x(1:N+1,44);
 t_nodo_11 = (Faux.*m(11))./A; # F11 = a11*m11
 
 
-
 # Plot de las tensiones.
 
 figure(1);
-clf; grid on; hold on; title('Tensiones(t)');
-plot(t(1:TCEL_POS), t_nodo_11(1:TCEL_POS));
-plot(t_barra_2(1:TCEL_LPOS,2), t_barra_2(1:TCEL_LPOS,1));
-##plot(TCEL, 0, 'ro'); #punto rojo indica el TCEL;
-line([TCEL TCEL], ylim, 'linewidth', 2, 'color', 'r');
+if(~SENO)
+  clf; grid on; hold on; title('Tensiones(t)');
+  plot(t(1:TCEL_POS), t_nodo_11(1:TCEL_POS));
+  plot(t_barra_2(1:TCEL_LPOS,2), t_barra_2(1:TCEL_LPOS,1));
+  line([TCEL TCEL], ylim, 'linewidth', 2, 'color', 'r');
+  legend('Tensión en nodo 11', 'Tensión en barra 2', 'Marca de tiempo final');
+else
+##  clf; grid on; hold on; title('x(t)');
+##  plot(x(:,1:TCEL_POS), t(:,1:TCEL_POS));
+##  plot(t_barra_2(1:TCEL_LPOS,2), t_barra_2(1:TCEL_LPOS,1));
+  clf;
+  grid on;
+  hold on;
+  title(sprintf('x(t) bajo P a %.2f hz', f));
+  xlabel('Tiempo');
+  ylabel('Posición');
 
-legend('Tensión en nodo 11', 'Tensión en barra 2', 'Marca de tiempo final');
 
+  plot(t(1:TCEL_POS), x(1:TCEL_POS, 1:2), 'r');
+  plot(t(1:TCEL_POS), x(1:TCEL_POS, 9:10), 'g');
+  plot(t(1:TCEL_POS), x(1:TCEL_POS, 21:22), 'b');
+  legend('Nodo 1 x','Nodo 1 y', 'Nodo 5 x','Nodo 5 y', 'Nodo 11 x', 'Nodo 11 y');
+
+endif
 # Plot de la animación. (item iv);
 figure(2);
-##
-##s_NomArch = '../EjemploGif';
-##
-##%%
-##gif([s_NomArch,'.gif'],'overwrite',true);
-##gif;
-%
+
 for i = 1:ceil(100*delta):TCEL_POS # para i con paso 5 en la longitud de t
   clf;
   plot_frame2(x(i, :)'); # plotea el frame
   title(sprintf('Tiempo = %.2f s', t(i)));
   drawnow;
-##  gif;
   pause(0.005); # pausa para que se aprecie
 
 endfor
